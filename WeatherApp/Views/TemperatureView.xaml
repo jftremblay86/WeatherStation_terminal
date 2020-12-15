@@ -2,20 +2,49 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:p="clr-namespace:WeatherApp.Properties"
              xmlns:local="clr-namespace:WeatherApp.Views"
              xmlns:models="clr-namespace:WeatherApp.Models"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="400">
     <DockPanel>
         <ToolBar DockPanel.Dock="Top">
-            <TextBlock Text="City : "/>
+            <TextBlock Text="{x:Static p:Resources.lbl_city}"/>
             <TextBox Text="{Binding City, UpdateSourceTrigger=PropertyChanged}" Width="250"/>
         </ToolBar>
-        <Button DockPanel.Dock="Top" Content="Get Data" Command="{Binding GetTempCommand}"/>
-        <!-- TODO 01b : Ajouter la ListView qui est liée avec la collection de Temperatures -->
-        <!-- Voir la solution 14_pratique_examen, projet : demo_listView -->
-        <ListView/>
-
+        <Button DockPanel.Dock="Top" Content="{x:Static p:Resources.btn_getData}" Command="{Binding GetTempCommand}"/>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="1*"/>
+                <RowDefinition Height="11*"/>
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" Text="{Binding RawText}"/>
+            <ListView Grid.Row="1" ItemsSource="{Binding Temperatures}">
+                <ListView.ItemTemplate>
+                    <DataTemplate DataType="{x:Type models:TemperatureModel}">
+                        <Border BorderThickness="1" BorderBrush="Black">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="auto"/>
+                                    <ColumnDefinition Width="auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition/>
+                                    <RowDefinition/>
+                                    <RowDefinition/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0"  Text="{x:Static p:Resources.lbl_city}"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding City}"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="{x:Static p:Resources.lbl_dataTime}"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DateTime}"/>
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="{x:Static p:Resources.lbl_temperature}"/>
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Temperature}"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </Grid>
     </DockPanel>
 </UserControl>

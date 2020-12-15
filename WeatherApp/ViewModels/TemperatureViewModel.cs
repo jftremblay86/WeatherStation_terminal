@@ -96,6 +96,9 @@ namespace WeatherApp.ViewModels
 
             if (CurrentTemp != null)
             {
+                RawText = CurrentTemp.ToString();
+                temperatures.Add(currentTemp);
+                Debug.WriteLine(CurrentTemp);
                 /// TODO 01 : Insérer la température à la position 0 de la collection
                 /// Description détaillée :
                 /// À chaque fois que l'on clique sur le bouton "Get Data". On veut 

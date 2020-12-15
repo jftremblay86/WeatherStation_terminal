@@ -1,8 +1,13 @@
-﻿using Ookii.Dialogs.Wpf;
+﻿using Newtonsoft.Json;
+using Ookii.Dialogs.Wpf;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Windows;
 using WeatherApp.Commands;
+using WeatherApp.Models;
 using WeatherApp.Services;
 
 namespace WeatherApp.ViewModels
@@ -19,6 +24,9 @@ namespace WeatherApp.ViewModels
 
         private VistaSaveFileDialog saveFileDialog;
         private VistaOpenFileDialog openFileDialog;
+        public DelegateCommand<string> OpenFileDialogCommand { get; set; }
+        public DelegateCommand<string> SaveFileDialogCommand { get; set; }
+        public DelegateCommand<string> ChangeLanguageCommand { get; set; }
 
         #endregion
 
@@ -66,7 +74,41 @@ namespace WeatherApp.ViewModels
         /// <summary>
         /// TODO 13a : Ajouter ChangeLanguageCommand
         /// </summary>
+        private string saveFilename;
 
+        public string SaveFilename
+        {
+            get { return saveFilename; }
+            set
+            {
+                saveFilename = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private string openFilename;
+
+        public string OpenFilename
+        {
+            get { return openFilename; }
+            set
+            {
+                openFilename = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private string fileContent;
+
+        public string FileContent
+        {
+            get { return fileContent; }
+            set
+            {
+                fileContent = value;
+                OnPropertyChanged();
+            }
+        }
 
         public List<BaseViewModel> ViewModels
         {
@@ -88,7 +130,10 @@ namespace WeatherApp.ViewModels
             /// TODO 03 : Instancier ImportCommand qui doit appeler la méthode Import
 
             /// TODO 13b : Instancier ChangeLanguageCommand qui doit appeler la méthode ChangeLanguage
-
+            ChangePageCommand = new DelegateCommand<string>(ChangePage);
+            OpenFileDialogCommand = new DelegateCommand<string>(Import);
+            SaveFileDialogCommand = new DelegateCommand<string>(Export, CanExport);
+            ChangeLanguageCommand = new DelegateCommand<string>(ChangeLanguage);
             initViewModels();          
 
             CurrentViewModel = ViewModels[0];
@@ -149,7 +194,7 @@ namespace WeatherApp.ViewModels
         /// <returns></returns>
         private bool CanExport(string obj)
         {
-            throw new NotImplementedException();
+                return true;      
         }
 
         /// <summary>
@@ -165,7 +210,7 @@ namespace WeatherApp.ViewModels
                 saveFileDialog.Filter = "Json file|*.json|All files|*.*";
                 saveFileDialog.DefaultExt = "json";
             }
-
+            ChooseFileToSave(obj);
             /// TODO 08 : Code pour afficher la boîte de dialogue de sauvegarde
             /// Voir
             /// Solution : 14_pratique_examen
@@ -178,9 +223,27 @@ namespace WeatherApp.ViewModels
             ///   
 
         }
+        private void ChooseFileToSave(string obj)
+        {
 
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                SaveFilename = saveFileDialog.FileName;
+                saveToFile();
+            }
+        }
         private void saveToFile()
         {
+            using (var tw = new StreamWriter(SaveFilename, false))
+            {
+                var data = tvm.Temperatures;
+
+                var resultat = JsonConvert.SerializeObject(data, Formatting.Indented);
+
+
+                tw.WriteLine(resultat);
+                tw.Close();
+            }
             /// TODO 09 : Code pour sauvegarder dans le fichier
             /// Voir 
             /// Solution : 14_pratique_examen
@@ -198,6 +261,25 @@ namespace WeatherApp.ViewModels
 
         private void openFromFile()
         {
+            if (!File.Exists(OpenFilename))
+            {
+                Console.WriteLine($"Le fichier {OpenFilename} n'existe pas. Veuillez le générer à partir de la sérialisation d'un tableau vers un fichier.");
+                Console.ReadKey();
+                return;
+            }
+
+            List<TemperatureModel> data;
+            using (StreamReader sr = File.OpenText(OpenFilename))
+            {
+                var fileContent = sr.ReadToEnd();
+
+                data = JsonConvert.DeserializeObject<List<TemperatureModel>>(fileContent);
+            }
+            tvm.Temperatures.Clear();
+            foreach (TemperatureModel temp in data)
+            {
+                tvm.Temperatures.Add(temp);
+            }
 
             /// TODO 05 : Code pour lire le contenu du fichier
             /// Voir
@@ -222,24 +304,39 @@ namespace WeatherApp.ViewModels
                 openFileDialog.Filter = "Json file|*.json|All files|*.*";
                 openFileDialog.DefaultExt = "json";
             }
+            SelectFile(obj);
 
             /// TODO 04 : Commande d'importation : Code pour afficher la boîte de dialogue
-            /// Voir
-            /// Solution : 14_pratique_examen
-            /// Projet : demo_openFolderDialog
-            /// ---
-            /// Algo
-            /// Si la réponse de la boîte de dialogue est vraie
-            ///   Garder le nom du fichier dans Filename
-            ///   Appeler la méthode openFromFile
+
 
         }
-
-        private void ChangeLanguage (string language)
+        private void SelectFile(string obj)
         {
-            /// TODO 13c : Compléter la méthode pour permettre de changer la langue
-            /// Ne pas oublier de demander à l'utilisateur de redémarrer l'application
-            /// Aide : ApiConsumerDemo
+            if (openFileDialog.ShowDialog() == true)
+            {
+                OpenFilename = openFileDialog.FileName;
+                openFromFile();
+            }
+        }
+        public void Restart()
+        {
+
+            var filename = Application.ResourceAssembly.Location;
+            var newFile = Path.ChangeExtension(filename, ".exe");
+            Process.Start(newFile);
+            Application.Current.Shutdown();
+        }
+        private void ChangeLanguage(string language)
+        {
+            Properties.Settings.Default.Language = language;
+            Properties.Settings.Default.Save();
+
+            if (MessageBox.Show(
+                    "Restart lapplication",
+                    "Warning",
+                    MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                Restart();
+
         }
 
         #endregion
